@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="description" content="Keyworth geological observations">
+		<meta name="author" content="Mike Steven">
+		<title>Keyworth geological observations</title>
+		
+		<!--ESRI calcite bootstrap implementation used for layout to handle legend 
+			and provide responsive solution across range of devices-->
+
+		<!-- Calcite Bootstrap -->
+		<link rel="stylesheet" href="https://esri.github.io/calcite-maps/dist/css/calcite-bootstrap.min-v0.2.css">
+
+		<!-- Calcite Maps -->
+		<link rel="stylesheet" href="https://esri.github.io/calcite-maps/dist/css/calcite-maps-arcgis-3.x.min-v0.2.css">
+
+		<!-- ArcGIS JS 3.x -->
+		<link rel="stylesheet" href="https://js.arcgis.com/3.16/esri/themes/calcite/dijit/calcite.css">
+		<link rel="stylesheet" href="https://js.arcgis.com/3.16/esri/themes/calcite/esri/esri.css">
+
+		<style>
+			html, body {
+				margin: 0;
+				padding: 0;
+				height: 100%;
+			}
+			/*Popup from ESRI calcite bootstrap requires a bit of editing*/
+			.calcite .esriPopup .esriPopupWrapper{
+				border-radius: 3px;
+				background-color: rgb(248, 248, 248);
+			}			
+			.calcite .esriPopup .titlePane{
+				background-color: rgb(240, 240, 240);
+				font-size: 12px;
+				padding: 5px;
+			}
+			.calcite .esriPopup .titlePane .title{
+				padding: 1px;
+			}
+			.calcite .esriPopup .titleButton.next {
+				right:25px;
+			}
+			.calcite .esriPopup .titleButton.prev {
+				right:40px;
+			}
+			.calcite .esriPopup .titleButton, .calcite .esriPopup .mediaHandle{
+				padding: 5px;
+			}
+		
+		</style>
+	</head>
+
+	<body class="calcite calcite-maps calcite-nav-top">
+
+		<!-- Navbar -->
+		<nav class="navbar calcite-navbar navbar-fixed-top calcite-text-dark calcite-bgcolor-grey-25">
+			<!-- Menu -->
+			<div class="dropdown calcite-dropdown calcite-bg-light calcite-text-dark" role="presentation">
+				<a class="dropdown-toggle" role="button" aria-haspopup="true" aria-expanded="false">
+				<div class="calcite-dropdown-toggle">
+					<span class="sr-only">Toggle dropdown menu</span>
+					<span></span>
+					<span></span>
+					<span></span>
+					<span></span>
+				</div> </a>
+				<ul class="dropdown-menu">
+					<li>
+						<a role="button" data-target="#panelLegend" aria-haspopup="true"><span class="glyphicon glyphicon-list"></span> Legend</a>
+					</li>
+					<li>
+						<a class="visible-xs" role="button" data-target="#panelSearch" aria-haspopup="true"><span class="glyphicon glyphicon-search"></span> Search</a>
+					</li>
+					<li>
+						<a role="button" id="calciteToggleNavbar" aria-haspopup="true"><span class="glyphicon glyphicon-fullscreen"></span> Full Map</a>
+					</li>
+				</ul>
+			</div>
+			<!-- Title -->
+			<div class="calcite-title calcite-overflow-hidden">
+				<span class="calcite-title-main">Keyworth Geological Observations</span>
+			</div>
+			<!-- Nav -->
+			<ul class="calcite-nav nav navbar-nav">
+				<li>
+					<div class="calcite-navbar-search hidden-xs">
+						<div id="searchNavDiv"></div>
+					</div>
+				</li>
+			</ul>
+
+		</nav><!--/.navbar -->
+
+		<!-- Map Container  -->
+
+		<div class="calcite-map calcite-widgets-dark">
+			<div id="mapViewDiv" class="calcite-map-absolute"></div>
+		</div><!-- /.container -->
+
+		<!-- Panel -->
+
+		<div class="calcite-panels calcite-panels-right calcite-bgcolor-grey-25 calcite-text-dark panel-group" role="tablist" aria-multiselectable="true">
+
+			<div id="panelLegend" class="panel collapse">
+				<div id="headingLegend" class="panel-heading" role="tab">
+					<div class="panel-title">
+						<a class="panel-toggle collapsed" role="button" data-toggle="collapse" href="#collapseLegend" aria-expanded="false" aria-controls="collapseLegend"><span class="glyphicon glyphicon-list" aria-hidden="true"></span><span class="panel-label">Legend</span></a>
+						<a class="panel-close" role="button" data-toggle="collapse" data-target="#panelLegend"><span class="esri-icon esri-icon-close" aria-hidden="true"></span></a>
+					</div>
+				</div>
+				<div id="collapseLegend" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingLegend">
+					<div class="panel-body">
+						<div id="legendDiv"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Search Panel -->
+
+			<div id="panelSearch" class="panel collapse hidden-sm hidden-md hidden-lg">
+				<div id="headingSearch" class="panel-heading" role="tab">
+					<div class="panel-title">
+						<a class="panel-toggle collapsed" role="button" data-toggle="collapse" href="#collapseSearch"  aria-expanded="false" aria-controls="collapseSearch"><span class="glyphicon glyphicon-search" aria-hidden="true"></span><span class="panel-label">Search</span></a>
+						<a class="panel-close" role="button" data-toggle="collapse" data-target="#panelSearch"><span class="esri-icon esri-icon-close" aria-hidden="true"></span></a>
+					</div>
+				</div>
+				<div id="collapseSearch" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingSearch">
+					<div class="panel-body calcite-body-expander">
+						<div id="searchPanelDiv"></div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+		<!-- /.calcite-panels -->
+
+		<script type="text/javascript">
+			var dojoConfig = {
+				packages : [{
+					name : "bootstrap",
+					location : "http://esri.github.com/calcite-maps/dist/vendor/dojo-bootstrap"
+					//location : "./calcite-maps/dist/vendor/dojo-bootstrap"
+				}, {
+					name : "calcite-maps",
+					location : "http://esri.github.com/calcite-maps/dist/js/dojo"
+					//location : "./calcite-maps/dist/js/dojo"
+				}]
+			};
+		</script>
+
+		<!-- ArcGIS JS 3.x -->
+		<script src="https://js.arcgis.com/3.16/"></script>
+
+		<script>
+		var map;
+
+			require([
+			// ArcGIS
+			"esri/map", "esri/dijit/Popup", "dojo/dom-construct",  "esri/InfoTemplate", 
+			"esri/dijit/Search", "esri/dijit/Legend", "dojo/_base/array", "esri/layers/CSVLayer", 
+			"esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/Color", "esri/renderers/SimpleRenderer",
+
+			// Calcite Maps
+			"calcite-maps/calcitemaps-v0.2",
+
+			// Bootstrap
+			"bootstrap/Collapse", "bootstrap/Dropdown", "bootstrap/Tab", "dojo/domReady!"], 
+			
+			function(Map, Popup, domConstruct, InfoTemplate, 
+				Search, Legend, arrayUtils, CSVLayer, 
+				SimpleMarkerSymbol, SimpleLineSymbol, Color, SimpleRenderer, 
+				CalciteMaps) {
+
+				// Popup
+				popup = new Popup(null, domConstruct.create("div"));
+				// resize popup to fit data better
+				popup.resize(195, 110);
+
+				// Map
+				map = new Map("mapViewDiv", {
+					infoWindow : popup,
+					basemap : "topo",
+					center : [-1.08, 52.873],
+					zoom : 13,
+					logo : false
+				});
+
+				map.on("load", function() {
+					map.resize();
+					map.reposition();
+				});						
+				
+				// source text files
+				var files = ["data/borehole.txt", 
+					"data/fossil.txt",
+					"data/measurement.txt",
+					"data/rock.txt"];
+				
+				// colours for displaying points
+				var colours = [new Color([0, 112, 255, 0.8]),  
+					new Color([76, 230, 0, 0.8]), 
+					new Color([0, 0, 150, 0.8]), 
+					new Color([15, 66, 0, 0.8])];
+				
+				// layer specific attributes for popup content 
+				var fieldContent = ["Drilled depth: ${Drilled depth (m)}m", 
+					"Species: ${Species} </br> <a href=/bgs/images/${Image} target=_blank>View photo</a>", 
+					"Porosity: ${Porosity}", 
+					"Type: ${Rock name} </br> <a href=/bgs/images/${Image} target=_blank>View photo</a>"];
+				
+				// labels for legend
+				var labels = ["Boreholes", 
+					"Fossils", 
+					"Measurements", 
+					"Rocks"];
+				
+				addCSVsToMap(files, colours, fieldContent, labels);
+				
+				// loop through arrays, create csvLayers, set symbology, legend labels and popup content then add all CSVLayers to map							
+				function addCSVsToMap(files, colours, fieldContent, labels){
+					// array to pass into map.addLayers method to load layers onto map
+					var allLayers = [];
+					
+					for ( i = 0; i < files.length; ++i) {
+					
+						var csv = new CSVLayer(files[i]);
+					
+						// set marker and renderer for csvLayers
+						colour = colours[i];
+						var marker = new SimpleMarkerSymbol("solid", 15, 
+							new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+								new Color([100, 100, 100]), 1.5), colour);
+						var renderer = new SimpleRenderer(marker);
+						renderer.label = labels[i];
+						csv.setRenderer(renderer);
+					
+						// set title and content for popup
+						var template = new InfoTemplate();
+						template.setTitle("${Type}");
+						content = fieldContent[i];
+						content = content + "</br>Elevation: ${Z}m </br>Date: ${Date} </br>Time: ${Time}";
+						template.setContent(content);
+						csv.setInfoTemplate(template);
+					
+						// add CSVLayers to array and on the last CSVLayer add them all to map
+						allLayers[i] = csv;
+						if (i == 3) {
+							map.addLayers(allLayers);
+						}
+					}										
+				}
+				
+				// Legend
+				map.on("layers-add-result", createLegend);
+
+				function createLegend(evt) {
+					var layerInfo = arrayUtils.map(evt.layers, function(layer, index) {
+						return {
+							layer : layer.layer,
+							title : " "
+						};
+					});
+					if (layerInfo.length > 0) {
+						var legendDijit = new Legend({
+							map : map,
+							layerInfos : layerInfo
+						}, "legendDiv");
+						legendDijit.startup();
+					}
+				}
+								
+				// Search
+				createSearchWidget("searchNavDiv");				
+
+				function createSearchWidget(parentId) {
+					var search = new Search({
+						map : map,
+						enableHighlight : false,
+					}, parentId);
+					search.startup();
+					return search;
+				}
+			});
+		</script>
+
+	</body>
+</html>
